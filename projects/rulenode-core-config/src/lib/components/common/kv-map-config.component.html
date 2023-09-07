@@ -5,7 +5,7 @@
       tb.rulenode.map-fields-required
     </div>
     <div class="tb-form-panel-hint tb-error" translate [hidden]="!areEqualError">
-      tb.rulenode.fields-cant-be-equal
+      tb.key-val.unique-key-value-pair-error
     </div>
   </div>
   <div class="tb-form-panel no-border no-padding">
@@ -19,10 +19,10 @@
         <div class="tb-form-table-row"
              *ngFor="let keyValControl of keyValsFormArray().controls; let $index = index;">
           <mat-form-field class="tb-inline-field field-space" appearance="outline" subscriptSizing="dynamic">
-            <input [placeholder]="keyText+'*'" [formControl]="keyValControl.get('key')" (input)="equalErrorChecking(keyValControl)" matInput/>
+            <input [placeholder]="keyText+'*'" [formControl]="keyValControl.get('key')" matInput/>
           </mat-form-field>
           <mat-form-field class="tb-inline-field field-space" appearance="outline" subscriptSizing="dynamic">
-            <input [placeholder]="valText+'*'" [formControl]="keyValControl.get('value')" (input)="equalErrorChecking(keyValControl)" matInput/>
+            <input [placeholder]="valText+'*'" [formControl]="keyValControl.get('value')" matInput/>
           </mat-form-field>
           <div class="tb-form-table-row-cell-buttons">
             <button [ngClass]="{'tb-hidden': keyValsFormArray().controls.length === 1}"

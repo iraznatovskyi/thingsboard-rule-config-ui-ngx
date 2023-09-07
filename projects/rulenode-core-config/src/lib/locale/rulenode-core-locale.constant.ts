@@ -636,7 +636,6 @@ export default function addRuleNodeCoreLocaleEnglish(translate: TranslateService
           'use-system-slack-settings': 'Use system slack settings',
           'slack-api-token': 'Slack API token',
           'slack-api-token-required': 'Slack API token is required',
-          'fields-cant-be-equal': "Fields can't be equal",
           'rename-keys-mapping': 'Rename keys mapping',
           'add-keys': 'Add keys',
           'template-rules-hint':

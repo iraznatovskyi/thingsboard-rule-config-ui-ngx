@@ -9,7 +9,9 @@ import {
   NG_VALIDATORS,
   NG_VALUE_ACCESSOR,
   NgControl,
+  ValidationErrors,
   Validator,
+  ValidatorFn,
   Validators
 } from '@angular/forms';
 import { coerceBoolean, PageComponent } from '@shared/public-api';
@@ -93,15 +95,12 @@ export class KvMapConfigComponent extends PageComponent implements ControlValueA
     return this.kvListFormGroup.get('keyVals') as FormArray;
   }
 
-  public equalErrorChecking(keyValControl) {
-    return this.areEqualError = keyValControl.value.key === keyValControl.value.value && this.uniqueKeyValuePairValidator;
-  }
-
   public errorTrigger() {
     const keyVals = this.keyValsFormArray();
     for (const keyVal of keyVals.controls) {
       for (const controlName of Object.keys(keyVal.value)) {
         if (keyVal.get(controlName).touched && keyVal.get(controlName).invalid) {
+          console.log('[IVAN --- ]', keyVal.get(controlName))
           return true;
         }
       }
@@ -125,6 +124,30 @@ export class KvMapConfigComponent extends PageComponent implements ControlValueA
     }
   }
 
+  duplicateValuesValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!control.parent) {
+        return null;
+      }
+
+      const keyValsArray = control.parent.get('keyVals') as FormArray;
+      if (!keyValsArray) {
+        return null;
+      }
+
+      const values = keyValsArray.controls.map((keyValControl: AbstractControl) => keyValControl.get('value').value);
+      const currentValue = control.value;
+
+      if (values.filter(value => value === currentValue).length > 1) {
+        console.log('ARE EQUAL=======================================')
+        return { duplicateValue: true };
+      }
+
+      return null;
+    };
+  }
+
+
   writeValue(keyValMap: { [key: string]: string }): void {
     if (this.valueChangeSubscription) {
       this.valueChangeSubscription.unsubscribe();
@@ -134,8 +157,8 @@ export class KvMapConfigComponent extends PageComponent implements ControlValueA
       for (const property of Object.keys(keyValMap)) {
         if (Object.prototype.hasOwnProperty.call(keyValMap, property)) {
           keyValsControls.push(this.fb.group({
-            key: [property, [Validators.required, Validators.pattern(/(?:.|\s)*\S(&:.|\s)*/)]],
-            value: [keyValMap[property], [Validators.required, Validators.pattern(/(?:.|\s)*\S(&:.|\s)*/)]]
+            key: [property, [Validators.required, Validators.pattern(/(?:.|\s)*\S(&:.|\s)*/), this.duplicateValuesValidator]],
+            value: [keyValMap[property], [Validators.required, Validators.pattern(/(?:.|\s)*\S(&:.|\s)*/), this.duplicateValuesValidator]]
           }));
         }
       }
@@ -184,6 +207,7 @@ export class KvMapConfigComponent extends PageComponent implements ControlValueA
 
   private updateModel() {
     const kvList: { key: string; value: string }[] = this.kvListFormGroup.get('keyVals').value;
+    console.log('TYPE', kvList)
     if (this.required && !kvList.length || !this.kvListFormGroup.valid) {
       this.propagateChange(null);
     } else {
