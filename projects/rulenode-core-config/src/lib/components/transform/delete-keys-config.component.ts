@@ -2,9 +2,10 @@ import { Component } from '@angular/core';
 import { RuleNodeConfiguration, RuleNodeConfigurationComponent } from '@shared/public-api';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { Store } from '@ngrx/store';
-import { AppState } from '@core/public-api';
+import { AppState, isDefinedAndNotNull } from '@core/public-api';
 import { MatChipInputEvent } from '@angular/material/chips';
 import { COMMA, ENTER, SEMICOLON } from '@angular/cdk/keycodes';
+import { FetchTo } from '../../rulenode-core-config.models';
 
 @Component({
   selector: 'tb-transformation-node-delete-keys-config',
@@ -26,6 +27,28 @@ export class DeleteKeysConfigComponent extends RuleNodeConfigurationComponent{
       fromMetadata: [configuration ? configuration.fromMetadata : null, [Validators.required]],
       keys: [configuration ? configuration.keys : null, [Validators.required]]
     });
+  }
+
+  protected prepareInputConfig(configuration: RuleNodeConfiguration): RuleNodeConfiguration {
+    let fromMetadata: FetchTo;
+    if (isDefinedAndNotNull(configuration?.fromMetadata)) {
+      if (configuration.fromMetadata) {
+        fromMetadata = FetchTo.METADATA;
+      } else {
+        fromMetadata = FetchTo.DATA; 
+      }
+    } else {
+      if (configuration?.fromMetadata) {
+        fromMetadata = configuration.fromMetadata;
+      } else {
+        fromMetadata = FetchTo.DATA;
+      }
+    }
+    
+    return {
+      keys: isDefinedAndNotNull(configuration?.keys) ? configuration.keys : null,
+      fromMetadata
+    };
   }
 
   protected configForm(): UntypedFormGroup {
