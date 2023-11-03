@@ -9,12 +9,14 @@ import {
   NG_VALIDATORS,
   NG_VALUE_ACCESSOR,
   NgControl,
+  ValidationErrors,
   Validator,
+  ValidatorFn,
   Validators
 } from '@angular/forms';
 import { coerceBoolean, PageComponent } from '@shared/public-api';
 import { Store } from '@ngrx/store';
-import { AppState } from '@core/public-api';
+import { AppState, isEqual } from '@core/public-api';
 import { Subscription } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
@@ -83,9 +85,13 @@ export class KvMapConfigComponent extends PageComponent implements ControlValueA
     if (this.ngControl != null) {
       this.ngControl.valueAccessor = this;
     }
-    this.kvListFormGroup = this.fb.group({});
-    this.kvListFormGroup.addControl('keyVals',
-      this.fb.array([]));
+    // this.kvListFormGroup = this.fb.group({});
+    // this.kvListFormGroup.addControl('keyVals',
+    //   this.fb.array([], {validators: this.propagateNestedErrors}));
+
+    this.kvListFormGroup = this.fb.group({
+      keyVals: this.fb.array([])
+    }, {validators: this.propagateNestedErrors});
   }
 
   keyValsFormArray(): FormArray {
@@ -120,9 +126,41 @@ export class KvMapConfigComponent extends PageComponent implements ControlValueA
     }
   }
 
+  propagateNestedErrors: ValidatorFn = (controls: FormArray | FormGroup | AbstractControl): ValidationErrors | null => {
+    if (this.kvListFormGroup && this.kvListFormGroup.get('keyVals') && this.kvListFormGroup.get('keyVals')?.status === 'VALID') {
+      return null;
+    }
+    const errors = {};
+    if (this.kvListFormGroup) {this.kvListFormGroup.setErrors(null);}
+    if (controls instanceof FormArray || controls instanceof FormGroup) {
+      if (controls.errors) {
+        for (const errorKey of Object.keys(controls.errors)) {
+          errors[errorKey] = true;
+        }
+      }
+      for (const control of Object.keys(controls.controls)) {
+        const innerErrors = this.propagateNestedErrors(controls.controls[control]);
+        if (innerErrors && Object.keys(innerErrors).length) {
+          for (const errorKey of Object.keys(innerErrors)) {
+            errors[errorKey] = true;
+          }
+        }
+      }
+      return errors;
+    } else {
+      if (controls.errors) {
+        for (const errorKey of Object.keys(controls.errors)) {
+          errors[errorKey] = true;
+        }
+      }
+    }
+
+    return !isEqual(errors, {}) ? errors : null;
+  };
+
   writeValue(keyValMap: { [key: string]: string }): void {
-    if (this.valueChangeSubscription) {
-      this.valueChangeSubscription.unsubscribe();
+    if (!keyValMap) {
+      keyValMap = {'':''};
     }
     const keyValsControls: Array<AbstractControl> = [];
     if (keyValMap) {
@@ -135,11 +173,32 @@ export class KvMapConfigComponent extends PageComponent implements ControlValueA
         }
       }
     }
-    this.kvListFormGroup.setControl('keyVals', this.fb.array(keyValsControls));
-    this.valueChangeSubscription = this.kvListFormGroup.valueChanges.subscribe(() => {
-      this.updateModel();
-    });
+    this.kvListFormGroup.setControl('keyVals', this.fb.array(keyValsControls, this.propagateNestedErrors), {emitEvent: false});
   }
+
+  // writeValue(keyValMap: { [key: string]: string }): void {
+  //   if (!keyValMap) {
+  //     keyValMap = {'':''};
+  //   }
+  //   if (this.valueChangeSubscription) {
+  //     this.valueChangeSubscription.unsubscribe();
+  //   }
+  //   const keyValsControls: Array<AbstractControl> = [];
+  //   if (keyValMap) {
+  //     for (const property of Object.keys(keyValMap)) {
+  //       if (Object.prototype.hasOwnProperty.call(keyValMap, property)) {
+  //         keyValsControls.push(this.fb.group({
+  //           key: [property, [Validators.required, Validators.pattern(/(?:.|\s)*\S(&:.|\s)*/)]],
+  //           value: [keyValMap[property], [Validators.required, Validators.pattern(/(?:.|\s)*\S(&:.|\s)*/)]]
+  //         }, {validators: this.propagateNestedErrors}));
+  //       }
+  //     }
+  //   }
+  //   this.kvListFormGroup.setControl('keyVals', this.fb.array(keyValsControls));
+  //   this.valueChangeSubscription = this.kvListFormGroup.valueChanges.subscribe(() => {
+  //     this.updateModel();
+  //   });
+  // }
 
   public removeKeyVal(index: number) {
     (this.kvListFormGroup.get('keyVals') as FormArray).removeAt(index);
@@ -177,22 +236,16 @@ export class KvMapConfigComponent extends PageComponent implements ControlValueA
     return null;
   }
 
-  private updateModel() {
-    const kvList: { key: string; value: string }[] = this.kvListFormGroup.get('keyVals').value;
-    if (this.required && !kvList.length || !this.kvListFormGroup.valid) {
-      if (!kvList.length) {
-        this.propagateChange({'serialNumber':'sn'});
-      } else {
-        this.propagateChange({
-          [kvList['key'] ? kvList['key'] : 'serialNumber']: kvList['value'] ? kvList['value'] : 'sn'
-        });
-      }
-    } else {
-      const keyValMap: { [key: string]: string } = {};
-      kvList.forEach((entry) => {
-        keyValMap[entry.key] = entry.value;
-      });
-      this.propagateChange(keyValMap);
-    }
-  }
+  // private updateModel() {
+  //   const kvList: { key: string; value: string }[] = this.kvListFormGroup.get('keyVals').value;
+  //   if (this.required && !kvList.length || !this.kvListFormGroup.valid) {
+  //     this.propagateChange(null);
+  //   } else {
+  //     const keyValMap: { [key: string]: string } = {};
+  //     kvList.forEach((entry) => {
+  //       keyValMap[entry.key] = entry.value;
+  //     });
+  //     this.propagateChange(keyValMap);
+  //   }
+  // }
 }

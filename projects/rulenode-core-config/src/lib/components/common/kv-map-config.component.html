@@ -1,8 +1,14 @@
 <section [formGroup]="kvListFormGroup" class="tb-form-panel stroked">
   <div class="tb-form-row no-padding no-border space-between">
     <div class="tb-form-panel-title">{{ labelText }}</div>
-    <div class="tb-form-panel-hint tb-error" translate [hidden]="!errorTrigger()">
+    <div class="tb-form-panel-hint tb-error" translate *ngIf="kvListFormGroup.hasError('kvFieldsRequired')">
+      tb.rulenode.map-fields-required
+    </div>
+    <div class="tb-form-panel-hint tb-error" translate *ngIf="kvListFormGroup.hasError('kvMapRequired')">
       {{ requiredText }}
+    </div>
+    <div class="tb-form-panel-hint tb-error" translate *ngIf="kvListFormGroup.hasError('required')">
+      tb.rulenode.map-fields-required
     </div>
   </div>
   <div class="tb-form-panel no-border no-padding">

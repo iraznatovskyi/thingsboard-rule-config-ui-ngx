@@ -118,6 +118,9 @@ export class SvMapConfigComponent extends PageComponent implements ControlValueA
   }
 
   writeValue(keyValMap: { [key: string]: string }): void {
+    if (!keyValMap) {
+      keyValMap = {'':''};
+    }
     if (this.valueChangeSubscription) {
       this.valueChangeSubscription.unsubscribe();
     }
@@ -218,19 +221,7 @@ export class SvMapConfigComponent extends PageComponent implements ControlValueA
   private updateModel() {
     const svList: { key: string; value: string }[] = this.svListFormGroup.get('keyVals').value;
     if (this.required && !svList.length || !this.svListFormGroup.valid) {
-      if (!svList.length) {
-        this.propagateChange({'name': originatorFieldsMappingValues.get('name')})
-      } else {
-        const keyName = svList['value']
-                ? svList['value']
-                : svList['key']
-                  ? originatorFieldsMappingValues.get(svList['key'])
-                  : originatorFieldsMappingValues.get('name');
-        const insertableValue = this.targetKeyPrefix + keyName[0].toUpperCase() + keyName.slice(1)
-        this.propagateChange({
-          [svList['key'] ? svList['key'] : 'name']: insertableValue
-        });
-      }
+      this.propagateChange(null)
     } else {
       const keyValMap: { [key: string]: string } = {};
       svList.forEach((entry) => {
